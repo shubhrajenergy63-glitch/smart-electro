@@ -98,13 +98,22 @@ for (const [t,c,type] of [
  ["jobs","status","TEXT DEFAULT 'Request Received'"],["quotations","status","TEXT DEFAULT 'submitted'"],["jobs","completion_approval","TEXT DEFAULT 'pending'"],["jobs","completion_rejection_reason","TEXT DEFAULT ''"],["work_posts","approval_status","TEXT DEFAULT 'pending'"]
 ]) addColumn(t,c,type);
 
-const admin = db.prepare("SELECT id FROM users WHERE mobile=?").get("9999999999");
+const crypto = require("crypto");
+const ADMIN_MOBILE = process.env.ADMIN_MOBILE;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const admin = db.prepare("SELECT id FROM users WHERE role='admin' ORDER BY id LIMIT 1").get();
 db.prepare("INSERT INTO settings(key,value) VALUES('approval_mode','manual') ON CONFLICT(key) DO NOTHING").run();
 db.prepare("INSERT INTO settings(key,value) VALUES('commission_rate','2') ON CONFLICT(key) DO NOTHING").run();
 db.prepare("INSERT INTO settings(key,value) VALUES('adsense_client','') ON CONFLICT(key) DO NOTHING").run();
 db.prepare("INSERT INTO settings(key,value) VALUES('adsense_slot','') ON CONFLICT(key) DO NOTHING").run();
-if (!admin) {
-  db.prepare(`INSERT INTO users(name,mobile,email,password,role,verified,available) VALUES(?,?,?,?,?,?,?)`)
-    .run("Smart Electro Admin","9999999999","admin@smartelectro.local","admin123","admin",1,1);
+if (ADMIN_MOBILE && ADMIN_PASSWORD) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(ADMIN_PASSWORD, salt, 64).toString("hex");
+  const password = "scrypt$" + salt + "$" + hash;
+  if (admin) {
+    db.prepare("UPDATE users SET mobile=?, password=?, email=? WHERE id=?").run(ADMIN_MOBILE, password, "admin@smartelectro.local", admin.id);
+  } else {
+    db.prepare("INSERT INTO users(name,mobile,email,password,role,verified,available) VALUES(?,?,?,?,?,?,?)").run("Smart Electro Admin", ADMIN_MOBILE, "admin@smartelectro.local", password, "admin", 1, 1);
+  }
 }
 module.exports = db;
