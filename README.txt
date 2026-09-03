@@ -6,7 +6,6 @@ Start on Windows:
 3. npm start
 4. Open http://localhost:3000
 
-Admin demo: 9999999999 / admin123
 
 Included workflows:
 - Customer and professional Aadhaar KYC fields (number + front/back photos + OTP gate).
